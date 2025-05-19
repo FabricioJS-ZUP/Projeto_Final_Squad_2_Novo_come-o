@@ -1,33 +1,25 @@
-import os
 import jwt
 import datetime
-from flask import request, jsonify
-from functools import wraps
 import secrets
 
-SECRET_KEY = os.getenv('SECRET_KEY') or secrets.token_hex(32)
+def obter_secret_key():
+    # Gerar uma chave secreta automaticamente
+    return secrets.token_hex(32)
 
-def generate_token(user_id):
+def gerar_token(usuario_id):
     payload = {
-        'user_id': user_id,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(minutes=30)
+        'id_usuario': usuario_id,
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(hours=1)  # Token expira em 1 hora
     }
-    token = jwt.encode(payload, SECRET_KEY, algorithm="HS256")
-    return token
+    secret_key = obter_secret_key()
+    return jwt.encode(payload, secret_key, algorithm='HS256')
 
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = request.headers.get('x-access-tokens')
-        if not token:
-            return jsonify({'message': 'Token is missing!'}), 403
-        try:
-            data = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-            current_user = data['user_id']
-        except jwt.ExpiredSignatureError:
-            return jsonify({'message': 'Token has expired!'}), 403
-        except jwt.InvalidTokenError:
-            return jsonify({'message': 'Token is invalid!'}), 403
-
-        return f(current_user, *args, **kwargs)
-    return decorated
+def verificar_token(token):
+    try:
+        secret_key = obter_secret_key()
+        payload = jwt.decode(token, secret_key, algorithms=['HS256'])
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise Exception("Token expirado.")
+    except jwt.InvalidTokenError:
+        raise Exception("Token inválido.")
