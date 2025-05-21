@@ -9,6 +9,5 @@ class CSVProcessor:
         # Baixa o arquivo do S3
         obj = self.s3.get_object(Bucket=bucket, Key=key)
         content = obj['Body'].read().decode('utf-8')
-        # Identifica dados sensíveis no conteúdo do CSV
         result = self.sensitive_data_identifier.identify(content)
         return result
